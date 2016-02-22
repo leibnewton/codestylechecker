@@ -10,6 +10,20 @@ import addfilesdlg_ui
 import os, re, fnmatch
 import subprocess
 
+class CalledProcessError(Exception): pass
+    
+def check_output_with_emsg(cmd, shell = False):
+    command_process = subprocess.Popen(cmd, 
+                                       shell = shell, 
+                                       stdout = subprocess.PIPE,
+                                       stderr = subprocess.PIPE)
+    status = command_process.wait()
+    output,emsg = command_process.communicate()
+    if status == 0:
+        return output
+    else:
+        raise CalledProcessError(emsg)
+
 class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     '''
     Add Files Dialog
@@ -45,27 +59,56 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
         pass
     
     def updatePreviewFromGit(self):
+        self.__filteredfiles__ = []
         rootDir = unicode(self.leDirectory.text())
-        if not os.path.isdir(rootDir): return
+        rootDir = os.path.expanduser(rootDir)
+        if not os.path.isdir(rootDir):
+            self.ShowErrorMessage('invalid directory.')            
+            return
         
         os.chdir(rootDir)
         try:
-            res = subprocess.check_output('git status -s', shell=True)
-            self.__filteredfiles__ = []
-            for line in res.split(os.linesep):
-                if not line: continue
-                parts = line.split()
-                if parts.startswith('M'):
-                    self.__filteredfiles__.append(parts[1])
-            self.lstPreview.clear()
-            self.lstPreview.addItems(self.__filteredfiles__)
-        except subprocess.CalledProcessError, e:
-            QtGui.QMessageBox.critical(self, 'Error', 
-            'Not a git repository (or any of the parent directories): .git')
+            if self.rbGitStatus.isChecked():
+                res = check_output_with_emsg('git status -s', shell=True)
+                for line in res.split(os.linesep):
+                    if not line: continue
+                    parts = line.split()
+                    if parts[0].startswith('M'):
+                        self.__filteredfiles__.append(parts[1])
+            elif self.rbGitCommit.isChecked():
+                commitid = unicode(self.leCommit.text()).strip()
+                if len(commitid) == 0: return
+                command = 'git diff-tree --name-only -r --no-commit-id %s' % commitid
+                res = check_output_with_emsg(command, shell=True)
+                for line in res.split(os.linesep):
+                    if not line: continue
+                    self.__filteredfiles__.append(line)
+            else:
+                self.ShowErrorMessage('Unexpected status. Please contact developer.')
+                return
+            self.RefreshList()
+        except CalledProcessError, e:
+            self.ShowErrorMessage(e.message)
+
+    def ShowErrorMessage(self, msg):
+        self.lblErrorMsg.setText(msg)
+        self.stackedWidget.setCurrentIndex(1)
+    
+    def ClearErrorMessage(self):
+        self.stackedWidget.setCurrentIndex(0)
+        
+    def RefreshList(self):
+        self.ClearErrorMessage()
+        self.lstPreview.clear()
+        self.lstPreview.addItems(self.__filteredfiles__)
     
     def updatePreview(self):
+        self.__filteredfiles__ = []
         rootDir = unicode(self.leDirectory.text())
-        if not os.path.isdir(rootDir): return
+        rootDir = os.path.expanduser(rootDir)
+        if not os.path.isdir(rootDir):
+            self.ShowErrorMessage('invalid directory.')
+            return
         
         if not self.rbAllFiles.isChecked():
             return self.updatePreviewFromGit()
@@ -80,7 +123,7 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
                 self.__allfiles__['files'] += [os.path.join(dirName, f) for f in fileList]
                 if not recursive: break
                 
-        ftext = self.leFilter.text()
+        ftext = unicode(self.leFilter.text())
         if not self.chkRegExp.isChecked(): #Unix shell-style wildcards
             ftext = fnmatch.translate(ftext)
             
@@ -88,10 +131,9 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
             reobj = re.compile(ftext)
             self.__filteredfiles__ = [f for f in self.__allfiles__['files'] if reobj.match(f)]
         except re.error, e: #sre_constants.error
-            self.__filteredfiles__ = []
-            
-        self.lstPreview.clear()
-        self.lstPreview.addItems(self.__filteredfiles__)
+            self.ShowErrorMessage(e.message)
+            return
+        self.RefreshList()
 
 if __name__ == '__main__':
     import sys
