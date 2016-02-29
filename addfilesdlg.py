@@ -81,7 +81,7 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
                 for line in res.split(os.linesep):
                     if not line: continue
                     parts = line.split()
-                    if parts[0].startswith('M'):
+                    if parts[0].startswith('M') or parts[0].startswith('A'):
                         self.__filteredfiles__.append(parts[1])
             elif self.rbGitCommit.isChecked():
                 commitid = unicode(self.leCommit.text()).strip()
@@ -127,7 +127,10 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
             self.__allfiles__['files']     = [] #populate files
             for dirName, subdirList, fileList in os.walk(rootDir):
                 dirName = os.path.relpath(dirName, rootDir) #get relative path
-                self.__allfiles__['files'] += [os.path.join(dirName, f) for f in fileList]
+                if dirName == os.path.curdir:
+                    self.__allfiles__['files'] += fileList
+                else:
+                    self.__allfiles__['files'] += [os.path.join(dirName, f) for f in fileList]
                 if not recursive: break
                 
         ftext = unicode(self.leFilter.text())
