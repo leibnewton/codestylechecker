@@ -49,6 +49,9 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     def getFiles(self):
         return self.__filteredfiles__[:]
     
+    def getRootDir(self):
+        return unicode(self.leDirectory.text())
+    
     def accept(self):
         #print 'accept'
         return super(AddFilesDlg, self).accept()
@@ -56,7 +59,11 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     @QtCore.pyqtSignature('')
     def on_pbBrowser_clicked(self):
         #print 'browser button clicked'
-        pass
+        folderBrowser = QtGui.QFileDialog(self)
+        folderBrowser.setFileMode(QtGui.QFileDialog.Directory)
+        folderBrowser.setOption(QtGui.QFileDialog.ShowDirsOnly)
+        if folderBrowser.exec_():
+            self.leDirectory.setText(folderBrowser.selectedFiles()[0])
     
     def updatePreviewFromGit(self):
         self.__filteredfiles__ = []
