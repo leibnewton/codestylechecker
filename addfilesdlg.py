@@ -50,7 +50,9 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
         return self.__filteredfiles__[:]
     
     def getRootDir(self):
-        return unicode(self.leDirectory.text())
+        rootDir = unicode(self.leDirectory.text())
+        rootDir = os.path.expanduser(rootDir)
+        return rootDir
     
     def accept(self):
         #print 'accept'
@@ -67,8 +69,7 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     
     def updatePreviewFromGit(self):
         self.__filteredfiles__ = []
-        rootDir = unicode(self.leDirectory.text())
-        rootDir = os.path.expanduser(rootDir)
+        rootDir = self.getRootDir()
         if not os.path.isdir(rootDir):
             self.ShowErrorMessage('invalid directory.')            
             return
@@ -111,8 +112,7 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     
     def updatePreview(self):
         self.__filteredfiles__ = []
-        rootDir = unicode(self.leDirectory.text())
-        rootDir = os.path.expanduser(rootDir)
+        rootDir = self.getRootDir()
         if not os.path.isdir(rootDir):
             self.ShowErrorMessage('invalid directory.')
             return
