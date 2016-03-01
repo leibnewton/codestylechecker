@@ -32,8 +32,24 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
     
     @QtCore.pyqtSignature('')
     def on_pbRemove_clicked(self):
-        print 'Remove'
+        item = self.treeFiles.currentItem()
+        if not item:
+            QtGui.QMessageBox.critical(self, 'Error', 'no item selected')
+            return
+        index = self.treeFiles.currentIndex()
+        if item.parent():
+            item.parent().takeChild(index.row())
+        else:
+            self.treeFiles.takeTopLevelItem(index.row())
+        print item.text(0)
+        del item
         
+    '''
+    @QtCore.pyqtSignature('QTreeWidgetItem*,QTreeWidgetItem*')
+    def on_treeFiles_currentItemChanged(self, cur, prev):
+        print cur.text(0), prev.text(0) if prev else '<None>'
+    '''
+    
     @QtCore.pyqtSignature('')
     def on_pbCheckNow_clicked(self):
         print 'Check Now'
