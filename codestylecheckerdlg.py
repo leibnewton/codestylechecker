@@ -19,6 +19,13 @@ def removeDir(dirPath, removeRoot = True):
     if removeRoot:
         os.rmdir(dirPath)
 
+def makeFreshDir(rootDir, desiredName):
+    res = os.path.join(rootDir, desiredName)
+    while os.path.exists(res):
+        res += '_'
+    os.mkdir(res)
+    return res
+
 class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
     '''
     Code Style Checker Dialog
@@ -29,10 +36,8 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         self.setupUi(self)
         self.updateButtonStatus()
         self.__isDirty = False
-        self.__dstdir = os.path.join(tempfile.gettempdir(), 'csc')
-        while os.path.exists(self.__dstdir):
-            self.__dstdir += '_'
-        os.mkdir(self.__dstdir)
+        self.__dstdir = makeFreshDir(tempfile.gettempdir(), 'csc')
+        self.__chkdir = makeFreshDir(tempfile.gettempdir(), 'chk')
 
     @QtCore.pyqtSignature('')
     def on_pbAdd_clicked(self):
@@ -116,7 +121,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
                         filename = '_' + filename
                 if dstpath: os.symlink(srcpath, dstpath)
         # check
-        #
+        # generate xml and html in self.__chkdir
         self.__isDirty = False
         self.pbCheckNow.setEnabled(False)
         self.pbViewHtml.setEnabled(True)
@@ -126,6 +131,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         print 'View HTML'
 
     def accept(self):
+        removeDir(self.__chkdir)
         removeDir(self.__dstdir)
         return super(CodeStyleCheckerDlg, self).accept()
 
