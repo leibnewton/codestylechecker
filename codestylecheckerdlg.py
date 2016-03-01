@@ -8,6 +8,16 @@ Created on Mon Feb 29 14:46:54 2016
 from PyQt4 import QtCore, QtGui
 import codestylecheckerdlg_ui
 import addfilesdlg
+import os, tempfile
+
+def removeDir(dirPath, removeRoot = True):
+    for root, dirs, files in os.walk(dirPath, topdown=False):
+        for name in files:
+            os.remove(os.path.join(root, name))
+        for name in dirs:
+            os.rmdir(os.path.join(root, name))
+    if removeRoot:
+        os.rmdir(dirPath)
 
 class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
     '''
@@ -15,9 +25,14 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
     '''
 
     def __init__(self, parent=None):
-        super(QtGui.QDialog, self).__init__(parent)
+        super(CodeStyleCheckerDlg, self).__init__(parent)
         self.setupUi(self)
         self.updateButtonStatus()
+        self.__isDirty = False
+        self.__dstdir = os.path.join(tempfile.gettempdir(), 'csc')
+        while os.path.exists(self.__dstdir):
+            self.__dstdir += '_'
+        os.mkdir(self.__dstdir)
 
     @QtCore.pyqtSignature('')
     def on_pbAdd_clicked(self):
@@ -66,18 +81,48 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         hasNodes = self.treeFiles.topLevelItemCount() > 0
         self.pbRemove.setEnabled(hasNodes)
         self.pbCheckNow.setEnabled(hasNodes)
-        self.pbViewHtml.setEnabled(hasNodes and True)
+        self.pbViewHtml.setEnabled(False)
+        self.__isDirty = True
 
     @QtCore.pyqtSignature('')
     def on_pbCheckNow_clicked(self):
         if self.treeFiles.topLevelItemCount() == 0:
             QtGui.QMessageBox.critical(self, 'Error', 'file list is empty')
             return
+        if not self.__isDirty:
+            QtGui.QMessageBox.information(self, 'Info', 'Already checked.')
+            return
+        removeDir(self.__dstdir, False)
+        for np in xrange(self.treeFiles.topLevelItemCount()):
+            pathItem = self.treeFiles.topLevelItem(np)
+            curpath = unicode(pathItem.text(0))
+            for nf in xrange(pathItem.childCount()):
+                fileItem = pathItem.child(nf)
+                filepath = unicode(fileItem.text(0))
+                srcpath = os.path.join(curpath, filepath)
+                filename = os.path.basename(filepath)
+                while True: # handle identical file name
+                    dstpath = os.path.join(self.__dstdir, filename)
+                    if not os.path.exists(dstpath):
+                        break
+                    if len(filepath) > len(filename):
+                        filename = filepath.replace('/', '_')
+                    else:
+                        filename = '_' + filename
+                os.symlink(srcpath, dstpath)
+        # check
+        #
+        self.__isDirty = False
+        self.pbCheckNow.setEnabled(False)
+        self.pbViewHtml.setEnabled(True)
 
     @QtCore.pyqtSignature('')
     def on_pbViewHtml_clicked(self):
         print 'View HTML'
 
+    def accept(self):
+        removeDir(self.__dstdir)
+        return super(CodeStyleCheckerDlg, self).accept()
 
 if __name__ == '__main__':
     import sys
