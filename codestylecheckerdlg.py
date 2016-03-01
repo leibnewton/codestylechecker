@@ -105,11 +105,16 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
                     dstpath = os.path.join(self.__dstdir, filename)
                     if not os.path.exists(dstpath):
                         break
+                    # handle identicle path: if they are the same file
+                    if os.path.realpath(dstpath) == os.path.realpath(srcpath):
+                        dstpath = ''
+                        #print 'Fount same file', filepath
+                        break
                     if len(filepath) > len(filename):
                         filename = filepath.replace('/', '_')
                     else:
                         filename = '_' + filename
-                os.symlink(srcpath, dstpath)
+                if dstpath: os.symlink(srcpath, dstpath)
         # check
         #
         self.__isDirty = False
