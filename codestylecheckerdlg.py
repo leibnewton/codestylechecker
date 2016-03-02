@@ -88,8 +88,8 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
     def updateButtonStatus(self):
         hasNodes = self.treeFiles.topLevelItemCount() > 0
         self.pbRemove.setEnabled(hasNodes)
-        self.pbCheckNow.setEnabled(hasNodes)
-        self.pbViewHtml.setEnabled(False)
+        self.pbCheckNow.setVisible(hasNodes)
+        self.pbViewHtml.setVisible(False)
         self.__isDirty = True
 
     @QtCore.pyqtSignature('')
@@ -126,8 +126,8 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         # check
         self.cpplint()
         self.__isDirty = False
-        self.pbCheckNow.setEnabled(False)
-        self.pbViewHtml.setEnabled(True)
+        self.pbCheckNow.setVisible(False)
+        self.pbViewHtml.setVisible(True)
 
     def cpplint(self):
         sys.argv = ['',
@@ -142,6 +142,12 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
             xit=redirect.lazyExit):
                 cpplint.main()
         self.__shower.abouttoclose()
+        ecnt = cpplint._cpplint_state.error_count
+        if not ecnt:
+            QtGui.QMessageBox.information(None, 'Congratulations!',
+                'Passed Checking. No error found!')
+        else:
+            QtGui.QMessageBox.critical(None, 'Result', '%d errors found.' % ecnt)
 
     @QtCore.pyqtSignature('')
     def on_pbViewHtml_clicked(self):
