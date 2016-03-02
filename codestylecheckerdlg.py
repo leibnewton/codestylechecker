@@ -5,10 +5,11 @@ Created on Mon Feb 29 14:46:54 2016
 @author: navicloud
 """
 
+import sys, os, tempfile
 from PyQt4 import QtCore, QtGui
-import codestylecheckerdlg_ui
-import addfilesdlg
-import os, tempfile
+import cpplint
+import RedirectStdStreams as redirect
+import addfilesdlg, codestylecheckerdlg_ui
 
 def removeDir(dirPath, removeRoot = True):
     for root, dirs, files in os.walk(dirPath, topdown=False):
@@ -121,10 +122,21 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
                         filename = '_' + filename
                 if dstpath: os.symlink(srcpath, dstpath)
         # check
-        # generate xml and html in self.__chkdir
+        self.cpplint()
         self.__isDirty = False
         self.pbCheckNow.setEnabled(False)
         self.pbViewHtml.setEnabled(True)
+
+    def cpplint(self):
+        sys.argv = ['',
+                '--threadnum=4',
+                '--output=xml',
+                self.__dstdir]
+        with open(os.path.join(self.__chkdir, 'result.xml'), 'w') as xmlfile:
+            with redirect.RedirectStdStreams(
+            stderr=xmlfile,
+            xit=redirect.lazyExit):
+                cpplint.main()
 
     @QtCore.pyqtSignature('')
     def on_pbViewHtml_clicked(self):
@@ -136,7 +148,6 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         return super(CodeStyleCheckerDlg, self).accept()
 
 if __name__ == '__main__':
-    import sys
     app = QtGui.QApplication(sys.argv)
     dlg = CodeStyleCheckerDlg()
     dlg.show()
