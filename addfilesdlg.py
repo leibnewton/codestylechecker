@@ -11,10 +11,10 @@ import os, re, fnmatch
 import subprocess
 
 class CalledProcessError(Exception): pass
-    
+
 def check_output_with_emsg(cmd, shell = False):
-    command_process = subprocess.Popen(cmd, 
-                                       shell = shell, 
+    command_process = subprocess.Popen(cmd,
+                                       shell = shell,
                                        stdout = subprocess.PIPE,
                                        stderr = subprocess.PIPE)
     status = command_process.wait()
@@ -28,36 +28,36 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     '''
     Add Files Dialog
     '''
-    
+
     def __init__(self, parent=None):
         super(AddFilesDlg, self).__init__(parent)
-        
+
         self.__allfiles__ = {'path':'', 'recursive':True, 'files':[]}
         self.__filteredfiles__ = []
-        
+
         self.setupUi(self)
         self.leDirectory.textChanged.connect(self.updatePreview) # editingFinished
         self.rbAllFiles.clicked.connect(self.updatePreview)
         self.leFilter.textChanged.connect(self.updatePreview)
         self.chkRegExp.clicked.connect(self.updatePreview)
         self.chkRecursive.clicked.connect(self.updatePreview)
-        
+
         self.rbGitStatus.clicked.connect(self.updatePreviewFromGit)
         self.rbGitCommit.clicked.connect(self.updatePreviewFromGit)
         self.leCommit.textChanged.connect(self.updatePreviewFromGit)
-    
+
     def getFiles(self):
         return self.__filteredfiles__[:]
-    
+
     def getRootDir(self):
         rootDir = unicode(self.leDirectory.text())
         rootDir = os.path.expanduser(rootDir)
         return rootDir
-    
-    def accept(self):
-        #print 'accept'
-        return super(AddFilesDlg, self).accept()
-        
+
+    def closeEvent(self, event):
+        #if failed: event.ignore();event.accept()
+        self.accept()
+
     @QtCore.pyqtSignature('')
     def on_pbBrowser_clicked(self):
         #print 'browser button clicked'
@@ -66,14 +66,14 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
         folderBrowser.setOption(QtGui.QFileDialog.ShowDirsOnly)
         if folderBrowser.exec_():
             self.leDirectory.setText(folderBrowser.selectedFiles()[0])
-    
+
     def updatePreviewFromGit(self):
         self.__filteredfiles__ = []
         rootDir = self.getRootDir()
         if not os.path.isdir(rootDir):
-            self.ShowErrorMessage('invalid directory.')            
+            self.ShowErrorMessage('invalid directory.')
             return
-        
+
         os.chdir(rootDir)
         try:
             if self.rbGitStatus.isChecked():
@@ -101,25 +101,25 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
     def ShowErrorMessage(self, msg):
         self.lblErrorMsg.setText(msg)
         self.stackedWidget.setCurrentIndex(1)
-    
+
     def ClearErrorMessage(self):
         self.stackedWidget.setCurrentIndex(0)
-        
+
     def RefreshList(self):
         self.ClearErrorMessage()
         self.lstPreview.clear()
         self.lstPreview.addItems(self.__filteredfiles__)
-    
+
     def updatePreview(self):
         self.__filteredfiles__ = []
         rootDir = self.getRootDir()
         if not os.path.isdir(rootDir):
             self.ShowErrorMessage('invalid directory.')
             return
-        
+
         if not self.rbAllFiles.isChecked():
             return self.updatePreviewFromGit()
-        
+
         recursive = self.chkRecursive.isChecked()
         if self.__allfiles__['path'] != rootDir or self.__allfiles__['recursive'] != recursive:
             self.__allfiles__['path']      = rootDir
@@ -132,11 +132,11 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
                 else:
                     self.__allfiles__['files'] += [os.path.join(dirName, f) for f in fileList]
                 if not recursive: break
-                
+
         ftext = unicode(self.leFilter.text())
         if not self.chkRegExp.isChecked(): #Unix shell-style wildcards
             ftext = fnmatch.translate(ftext)
-            
+
         try:
             reobj = re.compile(ftext)
             self.__filteredfiles__ = [f for f in self.__allfiles__['files'] if reobj.match(f)]

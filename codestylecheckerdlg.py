@@ -9,7 +9,8 @@ import sys, os, tempfile
 from PyQt4 import QtCore, QtGui
 import cpplint
 import RedirectStdStreams as redirect
-import addfilesdlg, codestylecheckerdlg_ui
+import addfilesdlg, progressshower
+import codestylecheckerdlg_ui
 
 def removeDir(dirPath, removeRoot = True):
     for root, dirs, files in os.walk(dirPath, topdown=False):
@@ -39,6 +40,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         self.__isDirty = False
         self.__dstdir = makeFreshDir(tempfile.gettempdir(), 'csc')
         self.__chkdir = makeFreshDir(tempfile.gettempdir(), 'chk')
+        self.__shower = progressshower.ProgressShower()
 
     @QtCore.pyqtSignature('')
     def on_pbAdd_clicked(self):
@@ -132,20 +134,23 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
                 '--threadnum=4',
                 '--output=xml',
                 self.__dstdir]
+        self.__shower.show()
         with open(os.path.join(self.__chkdir, 'result.xml'), 'w') as xmlfile:
             with redirect.RedirectStdStreams(
+            stdout=self.__shower,
             stderr=xmlfile,
             xit=redirect.lazyExit):
                 cpplint.main()
+        self.__shower.abouttoclose()
 
     @QtCore.pyqtSignature('')
     def on_pbViewHtml_clicked(self):
         print 'View HTML'
 
-    def accept(self):
+    def closeEvent(self, event):
         removeDir(self.__chkdir)
         removeDir(self.__dstdir)
-        return super(CodeStyleCheckerDlg, self).accept()
+        event.accept()
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

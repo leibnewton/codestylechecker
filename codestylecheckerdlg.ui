@@ -118,7 +118,7 @@
    <sender>pbQuit</sender>
    <signal>clicked()</signal>
    <receiver>Dialog</receiver>
-   <slot>accept()</slot>
+   <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>513</x>

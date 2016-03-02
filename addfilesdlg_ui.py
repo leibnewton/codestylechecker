@@ -121,7 +121,7 @@ class Ui_Dialog(object):
 
         self.retranslateUi(Dialog)
         self.stackedWidget.setCurrentIndex(0)
-        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("accepted()")), Dialog.accept)
+        QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("accepted()")), Dialog.close)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("rejected()")), Dialog.reject)
         QtCore.QObject.connect(self.rbGitCommit, QtCore.SIGNAL(_fromUtf8("toggled(bool)")), self.leCommit.setEnabled)
         QtCore.QObject.connect(self.rbAllFiles, QtCore.SIGNAL(_fromUtf8("toggled(bool)")), self.leFilter.setEnabled)
