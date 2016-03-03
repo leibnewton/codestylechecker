@@ -124,10 +124,10 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
                         filename = '_' + filename
                 if dstpath: os.symlink(srcpath, dstpath)
         # check
-        self.cpplint()
+        ecnt = self.cpplint()
         self.__isDirty = False
         self.pbCheckNow.setVisible(False)
-        self.pbViewHtml.setVisible(True)
+        self.pbViewHtml.setVisible(ecnt > 0)
 
     def cpplint(self):
         sys.argv = ['',
@@ -141,13 +141,14 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
             stderr=xmlfile,
             xit=redirect.lazyExit):
                 cpplint.main()
-        self.__shower.abouttoclose()
         ecnt = cpplint._cpplint_state.error_count
+        self.__shower.write('\n')
         if not ecnt:
-            QtGui.QMessageBox.information(None, 'Congratulations!',
-                'Passed Checking. No error found!')
+            self.__shower.write('<h2><font color="green">Passed. No error found!</font></h2>')
         else:
-            QtGui.QMessageBox.critical(None, 'Result', '%d errors found.' % ecnt)
+            self.__shower.write('<h2><font color="red">Failed. Found %d errors!</font></h2>' % ecnt)
+        self.__shower.abouttoclose()
+        return ecnt
 
     @QtCore.pyqtSignature('')
     def on_pbViewHtml_clicked(self):

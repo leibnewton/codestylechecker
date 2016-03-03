@@ -15,6 +15,7 @@ class ProgressShower(QtGui.QDialog):
         self.txeMessage.setMinimumSize(QtCore.QSize(400, 240))
         self.txeMessage.setFrameShape(QtGui.QFrame.NoFrame)
         self.txeMessage.setReadOnly(True)
+        self.txeMessage.mousePressEvent = self.mousePress
 
         self.horizontalLayout = QtGui.QHBoxLayout(self)
         self.horizontalLayout.addWidget(self.txeMessage)
@@ -23,26 +24,33 @@ class ProgressShower(QtGui.QDialog):
         self.setWindowTitle('cpplint Progress')
         #self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
-        self.__msg = ''
+        self.__enableSchedule = True
 
     def write(self, msg):
-        self.__msg += msg
-        self.txeMessage.setText(self.__msg)
+        for c in ('\n', '\r'):
+            if msg and msg[-1] == c:
+                msg = msg[0:-1]
+        self.txeMessage.append(msg)
+        self.txeMessage.ensureCursorVisible()
 
     def flush(self):
         pass
 
     def abouttoclose(self):
-        QtCore.QTimer.singleShot(1000, self.close)
+        QtCore.QTimer.singleShot(1500, self._scheduleClose)
+
+    def _scheduleClose(self):
+        if self.__enableSchedule:
+            self.close()
+
+    def mousePress(self, event):
+        self.__enableSchedule = False
+        return QtGui.QTextEdit.mousePressEvent(self.txeMessage, event)
 
     def closeEvent(self, event):
-        cursor = self.txeMessage.textCursor()
-        if self.__msg and cursor.position(): #unicode(cursor.selectedText())
-            self.__msg = '' # provide a flag
-            event.ignore()
-            return
-        self.__msg = ''
-        self.write('')
+        #cursor = self.txeMessage.textCursor()
+        #print cursor.position(): #unicode(cursor.selectedText())
+        self.txeMessage.clear()
         self.accept()
 
 if __name__ == '__main__':
@@ -52,5 +60,10 @@ if __name__ == '__main__':
     text = 'hello world-'*10
     text = text[:-1] + '\n'
     dlg.write(text*30)
+    dlg.write('normal line\r')
+    dlg.write('')
+    dlg.write('\n')
+    dlg.write('<h2><font color="green">Passed. No error found!</font></h2>')
+    dlg.write('<h2><font color="red">Failed. 3 errors found!</font></h2>')
     QtCore.QTimer.singleShot(0, dlg.abouttoclose)
     app.exec_()
