@@ -6,8 +6,8 @@ Created on Mon Feb 29 14:46:54 2016
 """
 
 import sys, os, tempfile
-from PyQt4 import QtCore, QtGui
-import cpplint
+from PyQt4 import QtCore, QtGui, QtWebKit
+import cpplint, cpplint_htmlreport
 import RedirectStdStreams as redirect
 import addfilesdlg, progressshower
 import codestylecheckerdlg_ui
@@ -41,6 +41,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         self.__dstdir = makeFreshDir(tempfile.gettempdir(), 'csc')
         self.__chkdir = makeFreshDir(tempfile.gettempdir(), 'chk')
         self.__shower = progressshower.ProgressShower()
+        self.__webView = None
 
     @QtCore.pyqtSignature('')
     def on_pbAdd_clicked(self):
@@ -135,24 +136,54 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
                 '--output=xml',
                 self.__dstdir]
         self.__shower.show()
-        with open(os.path.join(self.__chkdir, 'result.xml'), 'w') as xmlfile:
+        xmlPath = os.path.join(self.__chkdir, 'result.xml')
+        ecnt = 0
+        with open(xmlPath, 'w') as xmlfile:
             with redirect.RedirectStdStreams(
             stdout=self.__shower,
             stderr=xmlfile,
             xit=redirect.lazyExit):
                 cpplint.main()
-        ecnt = cpplint._cpplint_state.error_count
-        self.__shower.write('\n')
-        if not ecnt:
-            self.__shower.write('<h2><font color="green">Passed. No error found!</font></h2>')
-        else:
-            self.__shower.write('<h2><font color="red">Failed. Found %d errors!</font></h2>' % ecnt)
+                ecnt = cpplint._cpplint_state.error_count
+                self.__shower.write('\n')
+                if not ecnt:
+                    self.__shower.write('<h2><font color="green">Passed. No error found!</font></h2>')
+                else:
+                    self.__shower.write('<h2><font color="red">Failed. Found %d errors!</font></h2>' % ecnt)
+
+        if ecnt:
+            with redirect.RedirectStdStreams(
+            stdout=self.__shower,
+            stderr=self.__shower,
+            xit=redirect.lazyExit):
+                self.htmlreport(xmlPath)
         self.__shower.abouttoclose()
         return ecnt
 
+    def htmlreport(self, xmlPath):
+        reportPath = os.path.join(self.__chkdir, 'report')
+        removeDir(reportPath, False)
+        # no need to enclose path with quotes
+        sys.argv=['',
+                  '--file=%s' % xmlPath,
+                  '--report-dir=%s' % reportPath,
+                  '--source-dir=%s' % self.__chkdir]
+        cpplint_htmlreport.main()
+
     @QtCore.pyqtSignature('')
     def on_pbViewHtml_clicked(self):
-        print 'View HTML'
+        if self.treeFiles.topLevelItemCount() == 0:
+            QtGui.QMessageBox.critical(self, 'Error', 'file list is empty')
+            return
+        if self.__isDirty:
+            QtGui.QMessageBox.critical(self, 'Error', 'Please check first.')
+            return
+        if not self.__webView:
+            self.__webView = QtWebKit.QWebView()
+            self.__webView.setMinimumSize(1024, 768)
+        htmlFile = os.path.join(self.__chkdir, 'report/index.html')
+        self.__webView.load(QtCore.QUrl(htmlFile))
+        self.__webView.show()
 
     def closeEvent(self, event):
         removeDir(self.__chkdir)
