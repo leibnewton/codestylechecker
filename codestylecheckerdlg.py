@@ -11,6 +11,7 @@ import cpplint, cpplint_htmlreport
 import RedirectStdStreams as redirect
 import addfilesdlg, progressshower
 import codestylecheckerdlg_ui
+import resources_qrc
 
 def removeDir(dirPath, removeRoot = True):
     for root, dirs, files in os.walk(dirPath, topdown=False):
@@ -42,6 +43,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         self.__chkdir = makeFreshDir(tempfile.gettempdir(), 'chk')
         self.__shower = progressshower.ProgressShower()
         self.__webView = None
+        self.setWindowIcon(QtGui.QIcon(':/stylechecker.png'))
 
     @QtCore.pyqtSignature('')
     def on_pbAdd_clicked(self):

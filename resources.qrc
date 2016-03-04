@@ -1,0 +1,11 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+     <file>stylechecker.png</file>
+     <!-- can only be accessed by ':/stylechecker.png' -->
+</qresource>
+<qresource prefix="codes">
+     <file alias="common.py">tools/common.py</file>
+     <!-- can only be accessed by ':/codes/common.py' -->
+     <!--the alias override actual name if set-->
+</qresource>
+</RCC>
