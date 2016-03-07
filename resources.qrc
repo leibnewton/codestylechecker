@@ -2,6 +2,7 @@
 <qresource>
      <file>stylechecker.png</file>
      <!-- can only be accessed by ':/stylechecker.png' -->
+     <file>stylechecker128.png</file>
 </qresource>
 <qresource prefix="codes">
      <file alias="common.py">tools/common.py</file>

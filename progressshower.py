@@ -24,7 +24,9 @@ class ProgressShower(QtGui.QDialog):
         self.setWindowTitle('cpplint Progress')
         #self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
+    def showEvent(self, event):
         self.__enableSchedule = True
+        return super(ProgressShower, self).showEvent(event)
 
     def write(self, msg):
         for c in ('\n', '\r'):

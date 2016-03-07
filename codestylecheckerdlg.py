@@ -195,6 +195,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon(':/stylechecker128.png'))
     dlg = CodeStyleCheckerDlg()
     dlg.show()
     app.exec_()
