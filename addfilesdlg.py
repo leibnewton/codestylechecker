@@ -86,7 +86,7 @@ class AddFilesDlg(QtGui.QDialog, addfilesdlg_ui.Ui_Dialog):
             elif self.rbGitCommit.isChecked():
                 commitid = unicode(self.leCommit.text()).strip()
                 if len(commitid) == 0: return
-                command = 'git diff-tree --name-only -r --no-commit-id %s' % commitid
+                command = 'git diff-tree --name-only -r --no-commit-id --relative %s' % commitid
                 res = check_output_with_emsg(command, shell=True)
                 for line in res.split(os.linesep):
                     if not line: continue
