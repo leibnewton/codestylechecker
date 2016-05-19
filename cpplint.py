@@ -1157,14 +1157,14 @@ def Error(filename, lines, linenum, category, confidence, message):
       and 1 meaning that it could be a legitimate construct.
     message: The error message.
   """
+  # Returns true if current line or previous line has change line character.
+  if linenum > 1 and common.hasChangeLineCharInCurrentLineOrPrevLine(lines, linenum):
+    return
+  
   if _ShouldPrintError(category, confidence, linenum):
     _cpplint_state.IncrementErrorCount(category)
     severity = confidenceParse.cpplint_score_to_cppcheck_severity(confidence)
     
-    # Returns true if current line or previous line has change line character.
-    if linenum > 1 and common.hasChangeLineCharInCurrentLineOrPrevLine(lines, linenum):
-      return
-  
     if _cpplint_state.output_format == 'vs7':
       sys.stderr.write('%s(%s):  %s  [%s] [%d]\n' % (
           filename, linenum, message, category, confidence))
@@ -1177,46 +1177,10 @@ def Error(filename, lines, linenum, category, confidence, message):
 
 
 def ErrorForThread(filename, lines, linenum, category, confidence, message):
-  """Logs the fact we've found a lint error.--for threading
-
-  We log where the error was found, and also our confidence in the error,
-  that is, how certain we are this is a legitimate style regression, and
-  not a misidentification or a use that's sometimes justified.
-
-  False positives can be suppressed by the use of
-  "cpplint(category)"  comments on the offending line.  These are
-  parsed into _error_suppressions.
-
-  Args:
-    filename: The name of the file containing the error.
-    linenum: The number of the line containing the error.
-    category: A string used to describe the "category" this bug
-      falls under: "whitespace", say, or "runtime".  Categories
-      may have a hierarchy separated by slashes: "whitespace/indent".
-    confidence: A number from 1-5 representing a confidence score for
-      the error, with 5 meaning that we are certain of the problem,
-      and 1 meaning that it could be a legitimate construct.
-    message: The error message.
+  """--for multi-threading
   """
   mutex.acquire()
-  if _ShouldPrintError(category, confidence, linenum):
-    _cpplint_state.IncrementErrorCount(category)
-    severity = confidenceParse.cpplint_score_to_cppcheck_severity(confidence)
-    
-    # Returns true if current line or previous line has change line character.
-    if linenum > 1 and common.hasChangeLineCharInCurrentLineOrPrevLine(lines, linenum):
-      mutex.release()
-      return
-
-    if _cpplint_state.output_format == 'vs7':
-      sys.stderr.write('%s(%s):  %s  [%s] [%d]\n' % (
-          filename, linenum, message, category, confidence))
-    elif _cpplint_state.output_format == 'xml':
-      sys.stderr.write('''<error file="%s" line="%s" id="%s" severity="%s" msg="%s"/>\n'''%(filename,
-          linenum, category, severity, xmlEscape(message)))
-    else:
-      sys.stderr.write('%s:%s:  %s  [%s] [%d]\n' % (
-          filename, linenum, message, category, confidence))
+  Error(filename, lines, linenum, category, confidence, message)
   mutex.release()
 
 

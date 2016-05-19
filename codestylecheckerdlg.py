@@ -184,6 +184,7 @@ class CodeStyleCheckerDlg(QtGui.QDialog, codestylecheckerdlg_ui.Ui_Dialog):
         if not self.__webView:
             self.__webView = QtWebKit.QWebView()
             self.__webView.setMinimumSize(1024, 768)
+            self.__webView.setWindowModality(True)
         htmlFile = os.path.join(self.__chkdir, 'report/index.html')
         self.__webView.load(QtCore.QUrl(htmlFile))
         self.__webView.show()
