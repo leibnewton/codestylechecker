@@ -34,6 +34,7 @@ class ProgressShower(QtGui.QDialog):
                 msg = msg[0:-1]
         self.txeMessage.append(msg)
         self.txeMessage.ensureCursorVisible()
+        QtGui.QApplication.processEvents()
 
     def flush(self):
         pass
